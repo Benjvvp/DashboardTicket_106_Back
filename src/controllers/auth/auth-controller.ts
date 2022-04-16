@@ -63,12 +63,17 @@ export async function registerUser(req: Request, res: Response) {
       return res.status(400).json({ message: "AuthCode is incorrect" });
     }
    
-
-    const user = await User.findOne({ email });
-
+    
+    //Check userName and email
+    const user = await User.findOne({ userName });
     if (user) {
-      return res.status(400).json({ message: "User already exists" });
+      return res.status(400).json({ message: "User already exists (username)" });
     }
+    const userEmail = await User.findOne({ email });
+    if (userEmail) {
+      return res.status(400).json({ message: "User already exists (email)" });
+    }
+
 
     if(password !== passwordConfirmation) {
       return res.status(400).json({ message: "Password and password confirmation do not match" });
