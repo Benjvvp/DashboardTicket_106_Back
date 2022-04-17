@@ -1,25 +1,20 @@
 import { verify } from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
+import User from "../database/models/User";
 
-export const authToken = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  const token = req.headers.authorization?.split(" ")[1];
-
-  if (!token) return res.status(403).json({ mssg: "No token Provided" });
-
+export default async function authToken (req: Request, res: Response, next: NextFunction) {
+  const token = req.headers.authorization.replace("Bearer ", "");
   try {
-    const decoded = verify(token, process.env.JWT_SECRET_KEY as string) as {
-      email: string;
-      id: string;
-      iat: number;
-      exp: number;
-    };
-    req['decoded'] = decoded;
+    const decoded = verify(token, process.env.JWT_SECRET_KEY as string) as any;
+    const user = await User.findById(decoded.id);
+    if(!user) {
+      return res.status(400).json({ message: "User not found" });
+    }
+    req.user = user;
+
     next();
   } catch (error) {
-    return res.status(400).json({ mssg: "Invalid Token" });
+    console.log(error);
+    return res.status(500).json({ message: "Internal server error" });
   }
-};
+}

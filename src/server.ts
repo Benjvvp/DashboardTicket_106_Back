@@ -29,6 +29,10 @@ app.use(
     secret: "53k3153ass",
     resave: true,
     saveUninitialized: true,
+    cookie: {
+      path: "/",
+      maxAge: 1000 * 60 * 60 * 24 * 7,
+    },
   })
 );
 app.use(urlencoded({ extended: true }));

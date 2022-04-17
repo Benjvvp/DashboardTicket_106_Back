@@ -9,7 +9,7 @@ import {
   getTasks,
   getTasksAssigned,
 } from "../controllers/tasks/task-controller";
-import { authToken } from "../middlewares/authToken";
+import authToken from "../middlewares/authToken";
 
 const router = Router();
 
