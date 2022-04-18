@@ -2,13 +2,15 @@ import { Request, Response } from "express";
 import Task from "../../database/models/Task";
 
 export async function createTask(req: Request, res: Response){
-      const {title, description, author, assignedUsers } = req.body as { title: string; description: string; author: string; assignedUsers: string[] };
+      const {title, description, author, assignedUsers, priority, category } = req.body as { title: string; description: string; author: string; assignedUsers: string[], priority: string, category: string };
       let fieldRequired = [];
       if(!title) fieldRequired.push('title');
       if(!description) fieldRequired.push('description');
       if(!author) fieldRequired.push('author');
+      if(!priority) fieldRequired.push('priority');
+      if(!category) fieldRequired.push('category');
 
-      if(!title || !description || !author){
+      if(!title || !description || !author || !priority || !category) {
             return res.status(400).json({
                   message: 'Missing required fields in the request body. Fields: ' + fieldRequired.join(', ')
             });
@@ -19,9 +21,9 @@ export async function createTask(req: Request, res: Response){
                   title,
                   description,
                   author,
-                  if(assignedUsers: any){
-                        assignedUsers
-                  }
+                  priority,
+                  category,
+                  assignedUsers : assignedUsers ? assignedUsers : [],
             });
 
             await newTask.save();
@@ -98,7 +100,7 @@ export async function changeTaskProgress(req: Request, res: Response){
 }
 export async function editTask(req: Request, res: Response){
       const { id } = req.params;
-      const { title, description, assignedUsers } = req.body as { title: string; description: string; assignedUsers: string[] };
+      const { title, description, priority, assignedUsers } = req.body as { title: string; description: string; assignedUsers: string[], priority: string };
 
       try {
             const task = await Task.findById(id);
@@ -113,6 +115,9 @@ export async function editTask(req: Request, res: Response){
             }
             if (assignedUsers) {
                   task.assignedUsers = assignedUsers;
+            }
+            if (priority) {
+                  task.priority = priority;
             }
             await task.save();
             return res.status(200).json({ message: "Task updated", task });

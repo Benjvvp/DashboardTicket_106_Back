@@ -40,3 +40,18 @@ export async function getAllUsers(req: Request, res: Response) {
     return res.status(500).json({ message: "Internal server error" });
   }
 }
+
+export async function getUser(req: Request, res: Response){
+  try {
+    const user = await User.findOne({ _id: req.params.id });
+    
+    if(!user){
+      return res.status(400).json({ message: "User not found" });
+    }
+
+    return res.status(200).json({ message: "User found", user });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}

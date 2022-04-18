@@ -14,6 +14,16 @@ const TaskSchema = new Schema({
             enum: ['Pending', 'In Progress', 'Completed'],
             default: 'Pending'
       },
+      priority: {
+            type: String,
+            enum: ['Low', 'Medium', 'High'],
+            default: 'Low'
+      },
+      category: {
+            type: String,
+            enum: ['Software Team', 'Design Team', 'Testing Team', 'Other'],
+            default: 'Other'
+      },
       progress: {
             type: Number || String,
             required: true,
