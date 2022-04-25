@@ -40,7 +40,6 @@ export async function loginWithToken(req: Request, res: Response) {
     if (!user) {
       return res.status(400).json({ message: "User not found" });
     }
-
     res.status(200).json({ message: "User logged in", user });
   } catch (error) {
     console.log(error);
@@ -100,7 +99,12 @@ export async function registerUser(req: Request, res: Response) {
 
     await newUser.save();
 
-    res.status(200).json({ message: "User registered", user: newUser });
+    const token = jwt.sign(
+      { email, id: newUser._id },
+      process.env.JWT_SECRET_KEY as string
+    );
+
+    res.status(200).json({ message: "User registered", user: newUser, token });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Internal server error" });

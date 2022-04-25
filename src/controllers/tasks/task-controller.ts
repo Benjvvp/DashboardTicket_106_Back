@@ -3,6 +3,7 @@ import Task from "../../database/models/Task";
 
 export async function createTask(req: Request, res: Response){
       const {title, description, author, assignedUsers, priority, category } = req.body as { title: string; description: string; author: string; assignedUsers: string[], priority: string, category: string };
+      const tasks = await Task.find({});
       let fieldRequired = [];
       if(!title) fieldRequired.push('title');
       if(!description) fieldRequired.push('description');
@@ -12,9 +13,18 @@ export async function createTask(req: Request, res: Response){
 
       if(!title || !description || !author || !priority || !category) {
             return res.status(400).json({
-                  message: 'Missing required fields in the request body. Fields: ' + fieldRequired.join(', ')
+                  message: 'Missing required fields in the request body.',
             });
       };
+
+      //Check if the task already exists
+      const taskExists = tasks.find(task => task.title === title);
+      if(taskExists) {
+            return res.status(400).json({
+                  message: 'Task already exists.',
+            });
+      };
+
 
       try {
             const newTask = new Task({
@@ -23,7 +33,7 @@ export async function createTask(req: Request, res: Response){
                   author,
                   priority,
                   category,
-                  assignedUsers : assignedUsers ? assignedUsers : [],
+                  assignedUsers : assignedUsers ? assignedUsers : []
             });
 
             await newTask.save();

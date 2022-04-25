@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { ObjectId } from "mongodb";
 import mongoose from "mongoose";
 import User from "../../database/models/User";
 
@@ -50,6 +51,36 @@ export async function getUser(req: Request, res: Response){
     }
 
     return res.status(200).json({ message: "User found", user });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export async function getAssignedImagesUsers(req: Request, res: Response){
+  try{
+    const usersId = req.body.users.split(",");
+    const usersObject = [];
+
+    for(let i = 0; i < usersId.length; i++){
+
+      // check object id
+      if(!mongoose.Types.ObjectId.isValid(usersId[i])){
+        return res.status(400).json({ message: "Invalid id mongoose" });
+      }
+      const user = await User.findOne({ _id: usersId[i] });
+
+      usersObject.push({
+        userName: user.userName,
+        avatar: user.avatar
+      });
+    }
+
+    if(!usersObject){
+      return res.status(400).json({ message: "Users not found" });
+    }
+
+    return res.status(200).json({ message: "Users found", users: usersObject });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Internal server error" });
