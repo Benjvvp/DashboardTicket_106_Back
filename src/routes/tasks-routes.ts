@@ -1,13 +1,16 @@
 import { Router } from "express";
 import {
+  addUserToTask,
   changeTaskProgress,
   changeTaskStatus,
   createTask,
   deleteTask,
   editTask,
   getMyTasks,
+  getTask,
   getTasks,
   getTasksAssigned,
+  removeUserToTask,
 } from "../controllers/tasks/task-controller";
 import authToken from "../middlewares/authToken";
 
@@ -16,8 +19,12 @@ const router = Router();
 router.get('/getTasks', authToken, getTasks);
 router.get('/getMyTasks/:id', authToken, getMyTasks);
 router.get('/getTasksAssigned/:id', authToken, getTasksAssigned);
+router.get('/getTask/:id', authToken, getTask);
 
 router.post('/createTask', authToken, createTask);
+
+router.post('/addUserToTask/:id', authToken, addUserToTask);
+router.post('/removeUserToTask/:id', authToken, removeUserToTask);
 
 router.put('/:id', authToken, editTask);
 router.delete('/:id', authToken, deleteTask);

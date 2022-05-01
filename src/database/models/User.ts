@@ -32,10 +32,6 @@ const UserSchema = new Schema({
             enum: ['General Staff', 'Admin'],
             default: 'General Staff'
       },
-      token: {
-            type: String,
-            required: false,
-      },
 });
 
 export default model('User', UserSchema);

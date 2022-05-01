@@ -1,189 +1,249 @@
 import { Request, Response } from "express";
 import Task from "../../database/models/Task";
 
-export async function createTask(req: Request, res: Response){
-      const {title, description, author, assignedUsers, priority, category } = req.body as { title: string; description: string; author: string; assignedUsers: string[], priority: string, category: string };
-      const tasks = await Task.find({});
-      let fieldRequired = [];
-      if(!title) fieldRequired.push('title');
-      if(!description) fieldRequired.push('description');
-      if(!author) fieldRequired.push('author');
-      if(!priority) fieldRequired.push('priority');
-      if(!category) fieldRequired.push('category');
+export async function createTask(req: Request, res: Response) {
+  const { title, description, author, assignedUsers, priority, category } =
+    req.body as {
+      title: string;
+      description: string;
+      author: string;
+      assignedUsers: string[];
+      priority: string;
+      category: string;
+    };
+  const tasks = await Task.find({});
+  let fieldRequired = [];
+  if (!title) fieldRequired.push("title");
+  if (!description) fieldRequired.push("description");
+  if (!author) fieldRequired.push("author");
+  if (!priority) fieldRequired.push("priority");
+  if (!category) fieldRequired.push("category");
 
-      if(!title || !description || !author || !priority || !category) {
-            return res.status(400).json({
-                  message: 'Missing required fields in the request body.',
-            });
-      };
+  if (!title || !description || !author || !priority || !category) {
+    return res.status(400).json({
+      message: "Missing required fields in the request body.",
+    });
+  }
 
-      //Check if the task already exists
-      const taskExists = tasks.find(task => task.title === title);
-      if(taskExists) {
-            return res.status(400).json({
-                  message: 'Task already exists.',
-            });
-      };
+  //Check if the task already exists
+  const taskExists = tasks.find((task) => task.title === title);
+  if (taskExists) {
+    return res.status(400).json({
+      message: "Task already exists.",
+    });
+  }
 
+  try {
+    const newTask = new Task({
+      title,
+      description,
+      author,
+      priority,
+      category,
+      assignedUsers: assignedUsers ? assignedUsers : [],
+    });
 
-      try {
-            const newTask = new Task({
-                  title,
-                  description,
-                  author,
-                  priority,
-                  category,
-                  assignedUsers : assignedUsers ? assignedUsers : []
-            });
+    await newTask.save();
 
-            await newTask.save();
-
-            return res.status(200).json({ message: "Task created", task: newTask });
-      } catch (error) {
-            console.log(error);
-            return res.status(500).json({ message: "Internal server error" });
-      }
+    return res.status(200).json({ message: "Task created", task: newTask });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
 }
 
-export async function deleteTask(req: Request, res: Response){
-      const { id } = req.params;
-      try {
-            const task = await Task.findById(id);
-            if (!task) {
-                  return res.status(400).json({ message: "Task not found" });
-            }
-            task.remove();
-            return res.status(200).json({ message: "Task deleted" });
-      } catch (error) {
-            console.log(error);
-            return res.status(500).json({ message: "Internal server error" });
-      }
+export async function deleteTask(req: Request, res: Response) {
+  const { id } = req.params;
+  try {
+    const task = await Task.findById(id);
+    if (!task) {
+      return res.status(400).json({ message: "Task not found" });
+    }
+    task.remove();
+    return res.status(200).json({ message: "Task deleted" });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
 }
 
-export async function changeTaskStatus(req: Request, res: Response){
-      const { id } = req.params;
-      const { status } = req.body as { status: string };
+export async function changeTaskStatus(req: Request, res: Response) {
+  const { id } = req.params;
+  const { status } = req.body as { status: string };
 
-      try {
-            const task = await Task.findById(id);
-            
-            if (!task) {
-                  return res.status(400).json({ message: "Task not found" });
-            }
+  try {
+    const task = await Task.findById(id);
 
-            if(!status || !['Pending', 'In Progress', 'Completed'].includes(status)){
-                  return res.status(400).json({ message: "Invalid status" });
-            }
+    if (!task) {
+      return res.status(400).json({ message: "Task not found" });
+    }
 
-            task.status = status;
-            await task.save();
-            return res.status(200).json({ message: "Task status changed", task });
-      } catch (error) {
-            console.log(error);
-            return res.status(500).json({ message: "Internal server error" });
-      }
+    if (!status || !["Pending", "In Progress", "Completed"].includes(status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+
+    task.status = status;
+    await task.save();
+    return res.status(200).json({ message: "Task status changed", task });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
 }
 
-export async function changeTaskProgress(req: Request, res: Response){
-      const { id } = req.params;
-      const { progress } = req.body as { progress: number };
-      
-      try {
-            const task = await Task.findById(id);
+export async function changeTaskProgress(req: Request, res: Response) {
+  const { id } = req.params;
+  const { progress } = req.body as { progress: number };
 
-            if (!task) {
-                  return res.status(400).json({ message: "Task not found" });
-            }
+  try {
+    const task = await Task.findById(id);
 
-            if(!progress || progress < 0 || progress > 100){
-                  return res.status(400).json({ message: "Invalid progress" });
-            }
+    if (!task) {
+      return res.status(400).json({ message: "Task not found" });
+    }
 
-            task.progress = progress;
+    if (!progress || progress < 0 || progress > 100) {
+      return res.status(400).json({ message: "Invalid progress" });
+    }
 
-            await task.save();
-            return res.status(200).json({ message: "Task progress changed", task });
-      } catch (error) {
-            console.log(error);
-            return res.status(500).json({ message: "Internal server error" });
-      }
+    task.progress = progress;
+
+    await task.save();
+    return res.status(200).json({ message: "Task progress changed", task });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
 }
-export async function editTask(req: Request, res: Response){
-      const { id } = req.params;
-      const { title, description, priority, assignedUsers } = req.body as { title: string; description: string; assignedUsers: string[], priority: string };
+export async function editTask(req: Request, res: Response) {
+  const { id } = req.params;
+  const { title, description, priority, assignedUsers } = req.body as {
+    title: string;
+    description: string;
+    assignedUsers: string[];
+    priority: string;
+  };
 
-      try {
-            const task = await Task.findById(id);
-            if (!task) {
-                  return res.status(400).json({ message: "Task not found" });
-            }
-            if (title) {
-                  task.title = title;
-            }
-            if (description) {
-                  task.description = description;
-            }
-            if (assignedUsers) {
-                  task.assignedUsers = assignedUsers;
-            }
-            if (priority) {
-                  task.priority = priority;
-            }
-            await task.save();
-            return res.status(200).json({ message: "Task updated", task });
-      } catch (error) {
-            console.log(error);
-            return res.status(500).json({ message: "Internal server error" });
-      }
+  try {
+    const task = await Task.findById(id);
+    if (!task) {
+      return res.status(400).json({ message: "Task not found" });
+    }
+    if (title) {
+      task.title = title;
+    }
+    if (description) {
+      task.description = description;
+    }
+    if (assignedUsers) {
+      task.assignedUsers = assignedUsers;
+    }
+    if (priority) {
+      task.priority = priority;
+    }
+    await task.save();
+    return res.status(200).json({ message: "Task updated", task });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
 }
+export async function addUserToTask(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const { user } = req.body as { user: string };
+    const task = await Task.findById(id);
+    if (!task) {
+      return res.status(400).json({ message: "Task not found" });
+    }
+    if (task.assignedUsers.includes(user)) {
+      return res.status(400).json({ message: "User already assigned to task" });
+    }
+    task.assignedUsers.push(user);
+    await task.save();
+    return res.status(200).json({ message: "User added to task", task });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+export async function removeUserToTask(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const { userId } = req.body as { userId: string };
 
+    const task = await Task.findById(id);
+    if (!task) {
+      return res.status(400).json({ message: "Task not found" });
+    }
+    task.assignedUsers = task.assignedUsers.filter((user:any) => {
+      return user.toString() !== userId;
+    });
+    await task.save();
+    return res.status(200).json({ message: "User removed from task", task });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
 // Get tasks
-export async function getTasks(req: Request, res: Response){
-      try {
-            const tasks = await Task.find({});
+export async function getTasks(req: Request, res: Response) {
+  try {
+    const tasks = await Task.find({});
 
-            if(!tasks || tasks.length === 0){
-                  return res.status(400).json({ message: "Tasks not found" });
-            }
+    if (!tasks || tasks.length === 0) {
+      return res.status(400).json({ message: "Tasks not found" });
+    }
 
-            return res.status(200).json({ message: "Tasks fetched", tasks });
-      } catch (error) {
-            console.log(error);
-            return res.status(500).json({ message: "Internal server error" });
-      }
+    return res.status(200).json({ message: "Tasks fetched", tasks });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+export async function getTask(req: Request, res: Response) {
+  const { id } = req.params;
+  try {
+    const task = await Task.findById(id);
+    if (!task) {
+      return res.status(400).json({ message: "Task not found" });
+    }
+    return res.status(200).json({ message: "Task fetched", task });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+export async function getTasksAssigned(req: Request, res: Response) {
+  const { id } = req.params;
+
+  try {
+    const tasks = await Task.find({ assignedUsers: id });
+
+    if (!tasks || tasks.length === 0) {
+      return res.status(400).json({ message: "Tasks not found" });
+    }
+
+    return res.status(200).json({ message: "Tasks fetched", tasks });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
 }
 
-export async function getTasksAssigned(req: Request, res: Response){
-      const { id } = req.params;
+export async function getMyTasks(req: Request, res: Response) {
+  const { id } = req.params;
 
-      try {
-            const tasks = await Task.find({ assignedUsers: id });
+  try {
+    const tasks = await Task.find({ author: id });
 
-            if(!tasks || tasks.length === 0){
-                  return res.status(400).json({ message: "Tasks not found" });
-            }
+    if (!tasks || tasks.length === 0) {
+      return res.status(400).json({ message: "Tasks not found" });
+    }
 
-            return res.status(200).json({ message: "Tasks fetched", tasks });
-      } catch (error) {
-            console.log(error);
-            return res.status(500).json({ message: "Internal server error" });
-      }
-}
-
-export async function getMyTasks(req: Request, res: Response){
-      const {id} = req.params;
-
-      try{
-            const tasks = await Task.find({ author: id });
-
-            if(!tasks || tasks.length === 0){
-                  return res.status(400).json({ message: "Tasks not found" });
-            }
-
-            return res.status(200).json({ message: "Tasks fetched", tasks });
-      }
-      catch(error){
-            console.log(error);
-            return res.status(500).json({ message: "Internal server error" });
-      }
+    return res.status(200).json({ message: "Tasks fetched", tasks });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
 }

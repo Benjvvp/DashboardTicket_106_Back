@@ -37,11 +37,12 @@ app.use(
 );
 app.use(urlencoded({ extended: true }));
 app.use(cors({
-  origin: ["https://ticket106frontend.netlify.app", "http://localhost:3000"],
+  origin: ["https://ticket106frontend.netlify.app", "http://localhost:3000", "https://904f-201-188-68-135.sa.ngrok.io"],
   credentials: true,
 }));
 app.use(json());
 app.use(morgan("tiny"));
+app.use(express.static(path.join(__dirname, "./public")));
 
 //Routes
 app.use("/api/auth", authRoutes);
