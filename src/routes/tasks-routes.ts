@@ -26,10 +26,11 @@ router.post('/createTask', authToken, createTask);
 router.post('/addUserToTask/:id', authToken, addUserToTask);
 router.post('/removeUserToTask/:id', authToken, removeUserToTask);
 
-router.put('/:id', authToken, editTask);
-router.delete('/:id', authToken, deleteTask);
+router.put('/editTask/:id', authToken, editTask);
+router.delete('/deleteTask/:id', authToken, deleteTask);
 
 router.post('/changeTaskStatus/:id', authToken, changeTaskStatus);
 router.post('/changeTaskProgress/:id', authToken, changeTaskProgress);
+
 
 export default router;

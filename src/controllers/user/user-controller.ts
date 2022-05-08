@@ -171,7 +171,7 @@ export async function uploadAvatar(req: Request, res: Response) {
     if (!user) {
       return res.status(400).json({ message: "User not found" });
     }
-
+    
     fs.readdirSync("./src/public/images/avatars").forEach((file) => {
       if (file.split(".")[0] === id) fs.unlinkSync(`./src/public/images/avatars/${file}`);
     });

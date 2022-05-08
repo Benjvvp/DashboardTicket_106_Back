@@ -8,7 +8,18 @@ import tasksRoutes from "./routes/tasks-routes";
 import { connectToDB } from "./database/connection";
 import session from "express-session";
 import checkDashboardOptionsDB from "./utils/checkDashboardOptionsDB";
+import SocketController from "./controllers/chat/socket-controller";
+import { Server } from "socket.io";
+import {createServer} from "http";
+
 const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  serveClient: false,
+  cors: {
+    origin: "http://localhost:3000",
+  }
+})
 
 require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
 
@@ -21,7 +32,7 @@ declare module "express-session" {
 }
 
 //Settings APP
-app.set("port", process.env.PORT || 3000);
+app.set("port", process.env.PORT || 3001);
 
 //Middlewares
 app.use(
@@ -37,7 +48,7 @@ app.use(
 );
 app.use(urlencoded({ extended: true }));
 app.use(cors({
-  origin: ["https://ticket106frontend.netlify.app", "http://localhost:3000", "https://904f-201-188-68-135.sa.ngrok.io"],
+  origin: ["https://ticket106frontend.netlify.app", "http://localhost:3000", "https://904f-201-188-68-135.sa.ngrok.io", "http://localhost:80"],
   credentials: true,
 }));
 app.use(json());
@@ -55,7 +66,10 @@ connectToDB();
 //Checking dashboard options in DB
 checkDashboardOptionsDB();
 
+//Socket.io 
+SocketController(io);
+
 //Listening
-app.listen(app.get("port"), () => {
+httpServer.listen(app.get("port"), () => {
   console.log("Server on port", app.get("port"));
 });

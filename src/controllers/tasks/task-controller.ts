@@ -117,11 +117,13 @@ export async function changeTaskProgress(req: Request, res: Response) {
 }
 export async function editTask(req: Request, res: Response) {
   const { id } = req.params;
-  const { title, description, priority, assignedUsers } = req.body as {
+  const { title, description, category, priority, status, progress } = req.body as {
     title: string;
     description: string;
-    assignedUsers: string[];
+    category: string;
+    status: string;
     priority: string;
+    progress: number;
   };
 
   try {
@@ -135,11 +137,17 @@ export async function editTask(req: Request, res: Response) {
     if (description) {
       task.description = description;
     }
-    if (assignedUsers) {
-      task.assignedUsers = assignedUsers;
+    if (category) {
+      task.category = category;
+    }
+    if (status) {
+      task.status = status;
     }
     if (priority) {
       task.priority = priority;
+    }
+    if (progress){
+      task.progress = progress;
     }
     await task.save();
     return res.status(200).json({ message: "Task updated", task });
