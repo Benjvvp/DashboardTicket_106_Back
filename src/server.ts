@@ -5,6 +5,7 @@ import path from "path";
 import authRoutes from "./routes/auth-routes";
 import userRoutes from "./routes/user-routes";
 import tasksRoutes from "./routes/tasks-routes";
+import chatRoutes from './routes/chat-routes';
 import { connectToDB } from "./database/connection";
 import session from "express-session";
 import checkDashboardOptionsDB from "./utils/checkDashboardOptionsDB";
@@ -59,7 +60,7 @@ app.use(express.static(path.join(__dirname, "./public")));
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/tasks", tasksRoutes);
-
+app.use("/api/chat", chatRoutes);
 //Connect to DB
 connectToDB();
 

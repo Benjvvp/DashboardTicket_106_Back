@@ -66,6 +66,9 @@ export async function getAllUsers(req: Request, res: Response) {
 
 export async function getUser(req: Request, res: Response) {
   try {
+    if(req.params.id === undefined || req.params.id === null || req.params.id === "" || req.params.id === "undefined"){
+      return res.status(400).json({ message: "User id is not valid" });
+    }
     const user = await User.findOne({ _id: req.params.id });
 
     if (!user) {
