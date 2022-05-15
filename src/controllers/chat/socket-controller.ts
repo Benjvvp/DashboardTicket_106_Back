@@ -19,7 +19,7 @@ const SocketController = (
           message: data.message,
         });
         message.save().then(() => {
-          io.to([data.userId, data.senderId]).emit("chatMessage", {
+          io.to([data.userId, data.senderId]).emit("newMessage", {
             message: data.message,
             user: data.userId,
             sender: data.senderId,
@@ -37,7 +37,6 @@ const SocketController = (
     });
     socket.on("chatSeen", (data: { userId: string; senderId: string }) => {
       const { userId, senderId } = data;
-
       Message.find({
         $and: [{ user: userId }, { sender: senderId }],
       }).then((messages) => {
@@ -67,51 +66,53 @@ const SocketController = (
         });
       }
     );
-    socket.on(
-      "getUsersListInChat",
-      async (data: { userId: string; }) => {
-        const { userId } = data;
-        //Get users from DB
-        const users = await User.find();
-        //Create users list
-        const usersList = users.map(async (user) => {
-          //Get last message from DB
-          const lastMessage = await Message.findOne({
-            $and: [
-              { $or: [{ user: userId }, { user: user._id }] },
-              { $or: [{ sender: userId }, { sender: user._id }] },
-            ],
-          })
-            .sort({ createdAt: -1 })
-            .limit(1);
-          //Get messages without viewed messages only your messages
-          const unseenMessagesCount = await Message.find({
-            $and: [
-              { $or: [{ user: userId }, { sender: user._id }] },
-              { seen: false },
-            ],
-          });
+    socket.on("getUsersListInChat", async (data: { userId: string }) => {
+      const { userId } = data;
+      //Get users from DB
+      const users = await User.find();
 
-          const isOnlyUser = io.sockets.adapter.rooms[user._id]
-          return {
-            _id: user._id,
-            userName: user.userName,
-            avatar: user.avatar,
-            isOnline: isOnlyUser,
-            lastMessage: lastMessage ? lastMessage.message : "",
-            lastMessageTime: lastMessage ? lastMessage.createdAt : "",
-            unseenMessagesCount: unseenMessagesCount ? unseenMessagesCount.length : 0,
-          };
+      //Create users list
+      const usersList = users.map(async (user) => {
+        //Get last message from DB
+        const lastMessage = await Message.findOne({
+          $and: [
+            { $or: [{ user: userId }, { user: user._id }] },
+            { $or: [{ sender: userId }, { sender: user._id }] },
+          ],
+        })
+          .sort({ createdAt: -1 })
+          .limit(1);
+
+        //Get messages without viewed messages only your messages
+        const unseenMessagesCount = await Message.find({
+          $and: [
+            { $and: [{ user: userId }, { sender: user._id }] },
+            { seen: false },
+          ],
         });
-        //Send users list to users
-        Promise.all(usersList).then((usersList) => {
-          io.to([data.userId]).emit("getUsersListInChat", {
-            usersList,
-            userId: data.userId,
-          });
+
+        const isOnlyUser = io.sockets.adapter.rooms[user._id];
+
+        return {
+          _id: user._id,
+          userName: user.userName,
+          avatar: user.avatar,
+          isOnline: isOnlyUser,
+          lastMessage: lastMessage ? lastMessage.message : "",
+          lastMessageTime: lastMessage ? lastMessage.createdAt : "",
+          unseenMessagesCount: unseenMessagesCount
+            ? unseenMessagesCount.length
+            : 0,
+        };
+      });
+      //Send users list to users
+      Promise.all(usersList).then((usersList) => {
+        io.to([data.userId]).emit("getUsersListInChat", {
+          usersList,
+          userId: data.userId,
         });
-      }
-    );
+      });
+    });
   });
   io.on("disconnect", (socket: Socket) => {
     console.log("User disconnected");

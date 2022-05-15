@@ -6,6 +6,7 @@ import authRoutes from "./routes/auth-routes";
 import userRoutes from "./routes/user-routes";
 import tasksRoutes from "./routes/tasks-routes";
 import chatRoutes from './routes/chat-routes';
+import filesRoutes from './routes/files-routes';
 import { connectToDB } from "./database/connection";
 import session from "express-session";
 import checkDashboardOptionsDB from "./utils/checkDashboardOptionsDB";
@@ -18,7 +19,7 @@ const httpServer = createServer(app);
 const io = new Server(httpServer, {
   serveClient: false,
   cors: {
-    origin: "http://localhost:3000",
+    origin: ['http://localhost:3000', 'https://dashboard-ticket-106-front.vercel.app', 'https://ticket106frontend.netlify.app'],
   }
 })
 
@@ -33,7 +34,7 @@ declare module "express-session" {
 }
 
 //Settings APP
-app.set("port", process.env.PORT || 3001);
+app.set("port", process.env.PORT || 80);
 
 //Middlewares
 app.use(
@@ -49,7 +50,7 @@ app.use(
 );
 app.use(urlencoded({ extended: true }));
 app.use(cors({
-  origin: ["https://ticket106frontend.netlify.app", "http://localhost:3000", "https://904f-201-188-68-135.sa.ngrok.io", "http://localhost:80"],
+  origin: ['http://localhost:3000', 'https://dashboard-ticket-106-front.vercel.app', 'https://ticket106frontend.netlify.app'],
   credentials: true,
 }));
 app.use(json());
@@ -61,6 +62,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/tasks", tasksRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/files", filesRoutes);
 //Connect to DB
 connectToDB();
 

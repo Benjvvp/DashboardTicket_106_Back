@@ -32,6 +32,10 @@ const UserSchema = new Schema({
             enum: ['General Staff', 'Admin'],
             default: 'General Staff'
       },
+      filesPushed: {
+            type: Number,
+            default: 0
+      },
 });
 
 export default model('User', UserSchema);
