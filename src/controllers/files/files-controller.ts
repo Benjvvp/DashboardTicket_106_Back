@@ -119,14 +119,14 @@ export function getFilesAverageType(req: Request, res: Response) {
 export function getFolders(req: Request, res: Response) {
   try {
     let folders = [] as any;
-    if(!fs.existsSync("../../src/public/files")) {
-      fs.mkdirSync("../../src/public/files");
+    if(!fs.existsSync("c")) {
+      fs.mkdirSync("./src/public/files");
       res.status(200).json({
         message: "Doesn't exist any folder",
         isError: false,
       });
     }
-    fs.readdirSync("../../src/public/files").forEach((file) => {
+    fs.readdirSync("./src/public/files").forEach((file) => {
       if (file.split(".")[0] !== ".") {
         folders.push(file);
       }
@@ -134,7 +134,7 @@ export function getFolders(req: Request, res: Response) {
     //Get count of files in each folder
     folders = folders.map((folder: any) => {
       let files = 0;
-      fs.readdirSync(`../../src/public/files/${folder}`).forEach((file: any) => {
+      fs.readdirSync(`./src/public/files/${folder}`).forEach((file: any) => {
         files++;
       });
       return {
