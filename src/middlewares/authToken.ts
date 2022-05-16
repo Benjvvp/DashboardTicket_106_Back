@@ -3,7 +3,7 @@ import { Request, Response, NextFunction } from "express";
 import User from "../database/models/User";
 
 export default async function authToken (req: Request, res: Response, next: NextFunction) {
-  const token = req.headers.authorization.replace("Bearer ", "");
+  const token = req.headers?.authorization?.replace("Bearer ", "");
   if(!token){
     return res.status(401).json({message:'Interal server error'})
   }
@@ -13,7 +13,6 @@ export default async function authToken (req: Request, res: Response, next: Next
     if(!user) {
       return res.status(400).json({ message: "User not found" });
     }
-    req.user = user;
 
     next();
   } catch (error) {
