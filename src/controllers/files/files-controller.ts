@@ -110,7 +110,7 @@ export function getFilesAverageType(req: Request, res: Response) {
       other,
       isError: false,
     });
-  } catch (error) {
+  } catch (error: any) {
     pushLogInFile(error);
     return res.status(500).json({ message: "Internal server error" });
   }
@@ -118,14 +118,14 @@ export function getFilesAverageType(req: Request, res: Response) {
 
 export function getFolders(req: Request, res: Response) {
   try {
-    let folders = [];
+    let folders = [] as any;
     fs.readdirSync("./src/public/files").forEach((file) => {
       if (file.split(".")[0] !== ".") {
         folders.push(file);
       }
     });
     //Get count of files in each folder
-    folders = folders.map((folder) => {
+    folders = folders.map((folder: any) => {
       let files = 0;
       fs.readdirSync(`./src/public/files/${folder}`).forEach((file: any) => {
         files++;
@@ -140,7 +140,7 @@ export function getFolders(req: Request, res: Response) {
       folders: folders,
       isError: false,
     });
-  } catch (error) {
+  } catch (error: any) {
     pushLogInFile(error);
     return res.status(500).json({ message: "Internal server error" });
   }
@@ -166,7 +166,7 @@ export function createFolder(req: Request, res: Response) {
       message: "Folder created",
       isError: false,
     });
-  } catch (error) {
+  } catch (error: any) {
     pushLogInFile(error);
     return res.status(500).json({ message: "Internal server error" });
   }

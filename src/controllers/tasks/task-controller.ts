@@ -51,7 +51,7 @@ export async function createTask(req: Request, res: Response) {
     return res
       .status(200)
       .json({ message: "Task created", task: newTask, isError: false });
-  } catch (error) {
+  } catch (error: any) {
     pushLogInFile(error);
     return res.status(500).json({ message: "Internal server error" });
   }
@@ -66,7 +66,7 @@ export async function deleteTask(req: Request, res: Response) {
     }
     task.remove();
     return res.status(200).json({ message: "Task deleted", isError: false });
-  } catch (error) {
+  } catch (error: any) {
     pushLogInFile(error);
     return res.status(500).json({ message: "Internal server error" });
   }
@@ -111,7 +111,7 @@ export async function editTask(req: Request, res: Response) {
     return res
       .status(200)
       .json({ message: "Task updated", task, isError: false });
-  } catch (error) {
+  } catch (error: any) {
     pushLogInFile(error);
     return res.status(500).json({ message: "Internal server error" });
   }
@@ -134,7 +134,7 @@ export async function addUserToTask(req: Request, res: Response) {
     return res
       .status(200)
       .json({ message: "User added to task", task, isError: false });
-  } catch (error) {
+  } catch (error: any) {
     pushLogInFile(error);
     return res.status(500).json({ message: "Internal server error" });
   }
@@ -155,7 +155,7 @@ export async function removeUserToTask(req: Request, res: Response) {
     return res
       .status(200)
       .json({ message: "User removed from task", task, isError: false });
-  } catch (error) {
+  } catch (error: any) {
     pushLogInFile(error);
     return res.status(500).json({ message: "Internal server error" });
   }
@@ -174,7 +174,7 @@ export async function getTasks(req: Request, res: Response) {
     return res
       .status(200)
       .json({ message: "Tasks fetched", tasks, isError: false });
-  } catch (error) {
+  } catch (error: any) {
     pushLogInFile(error);
     return res.status(500).json({ message: "Internal server error" });
   }
@@ -189,7 +189,7 @@ export async function getTask(req: Request, res: Response) {
     return res
       .status(200)
       .json({ message: "Task fetched", task, isError: false });
-  } catch (error) {
+  } catch (error: any) {
     pushLogInFile(error);
     return res.status(500).json({ message: "Internal server error" });
   }
@@ -209,7 +209,7 @@ export async function getTasksAssigned(req: Request, res: Response) {
     return res
       .status(200)
       .json({ message: "Tasks fetched", tasks, isError: false });
-  } catch (error) {
+  } catch (error: any) {
     pushLogInFile(error);
     return res.status(500).json({ message: "Internal server error" });
   }
@@ -230,7 +230,7 @@ export async function getMyTasks(req: Request, res: Response) {
     return res
       .status(200)
       .json({ message: "Tasks fetched", tasks, isError: false });
-  } catch (error) {
+  } catch (error: any) {
     pushLogInFile(error);
     return res.status(500).json({ message: "Internal server error" });
   }

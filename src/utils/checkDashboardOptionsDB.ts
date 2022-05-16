@@ -2,7 +2,7 @@ import DashboardOptions from "../database/models/DashboardOptions";
 
 export default function checkDashboardOptionsDB() {
   //Check if the DashboardOptions collection is empty
-  DashboardOptions.findOne({}, (err, dashboardOptions) => {
+  DashboardOptions.findOne({}, (err:any, dashboardOptions:any) => {
     if (err) {
       console.log(err);
     } else if (dashboardOptions) {
@@ -14,7 +14,7 @@ export default function checkDashboardOptionsDB() {
         AuthCode: Math.random().toString(36).substring(7),
       });
       //Save the new DashboardOptions document
-      newDashboardOptions.save((err) => {
+      newDashboardOptions.save((err:any) => {
         if (err) {
           console.log(err);
         } else {

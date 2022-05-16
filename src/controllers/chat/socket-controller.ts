@@ -91,7 +91,7 @@ const SocketController = (
           ],
         });
 
-        const isOnlyUser = io.sockets.adapter.rooms[user._id];
+        const isOnlyUser = io.sockets.adapter.rooms.get(user._id);
 
         return {
           _id: user._id,
