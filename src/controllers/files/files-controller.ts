@@ -119,7 +119,7 @@ export function getFilesAverageType(req: Request, res: Response) {
 export function getFolders(req: Request, res: Response) {
   try {
     let folders = [] as any;
-    if(!fs.existsSync("c")) {
+    if(!fs.existsSync("./src/public/files")) {
       fs.mkdirSync("./src/public/files");
       return res.status(200).json({
         message: "Doesn't exist any folder",
