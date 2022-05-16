@@ -3,4 +3,5 @@ node_modules
 .env.local
 .env.development
 package-lock.json
-src/public
+src/public/files
+src/public/images
