@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import multer from "multer";
 import fs from "fs";
+import { pushLogInFile } from "../../utils/logsSystem";
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -93,9 +94,10 @@ export function getFilesAverageType(req: Request, res: Response) {
       images,
       exe,
       other,
+      isError: false,
     });
   } catch (error) {
-    console.log(error);
+    pushLogInFile(error);
     return res.status(500).json({ message: "Internal server error" });
   }
 }
@@ -122,9 +124,10 @@ export function getFolders(req: Request, res: Response) {
     return res.status(200).json({
       message: "Folders",
       folders: folders,
+      isError: false,
     });
   } catch (error) {
-    console.log(error);
+    pushLogInFile(error);
     return res.status(500).json({ message: "Internal server error" });
   }
 }
@@ -133,21 +136,24 @@ export function createFolder(req: Request, res: Response) {
   try {
     const { folderName } = req.body;
     if (!folderName) {
-      return res.status(400).json({
+      return res.status(200).json({
         message: "Folder name is required",
+        isError: true,
       });
     }
     if (fs.existsSync(`./src/public/files/${folderName}`)) {
-      return res.status(400).json({
+      return res.status(200).json({
         message: "Folder already exists",
+        isError: true,
       });
     }
     fs.mkdirSync(`./src/public/files/${folderName}`);
     return res.status(200).json({
       message: "Folder created",
+      isError: false,
     });
   } catch (error) {
-    console.log(error);
+    pushLogInFile(error);
     return res.status(500).json({ message: "Internal server error" });
   }
 }

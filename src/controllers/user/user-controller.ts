@@ -5,6 +5,7 @@ import Task from "../../database/models/Task";
 import User from "../../database/models/User";
 import multer from "multer";
 import fs from "fs";
+import { pushLogInFile } from "../../utils/logsSystem";
 
 export async function editUser(req: Request, res: Response) {
   const { userName, avatar, email, role } = req.body as {
@@ -17,19 +18,25 @@ export async function editUser(req: Request, res: Response) {
 
   try {
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "Invalid id mongoose" });
+      return res
+        .status(200)
+        .json({ message: "Invalid id mongoose", isError: true });
     }
     const checkUser = await User.findById(id);
     if (!checkUser) {
-      return res.status(400).json({ message: "User not found" });
+      return res.status(200).json({ message: "User not found", isError: true });
     }
     const checkUser_email = await User.findOne({ email });
     if (checkUser_email && checkUser_email.id !== id) {
-      return res.status(400).json({ message: "Email already exists" });
+      return res
+        .status(200)
+        .json({ message: "Email already exists", isError: true });
     }
     const checkUser_userName = await User.findOne({ userName });
     if (checkUser_userName && checkUser_userName.id !== id) {
-      return res.status(400).json({ message: "User name already exists" });
+      return res
+        .status(200)
+        .json({ message: "User name already exists", isError: true });
     }
 
     if (userName) {
@@ -47,9 +54,11 @@ export async function editUser(req: Request, res: Response) {
     }
     await checkUser.save();
 
-    return res.status(200).json({ message: "User updated", user: checkUser });
+    return res
+      .status(200)
+      .json({ message: "User updated", user: checkUser, isError: false });
   } catch (error) {
-    console.log(error);
+    pushLogInFile(error);
     return res.status(500).json({ message: "Internal server error" });
   }
 }
@@ -57,27 +66,38 @@ export async function editUser(req: Request, res: Response) {
 export async function getAllUsers(req: Request, res: Response) {
   try {
     const users = await User.find();
-    return res.status(200).json({ message: "Users found", users });
+    return res
+      .status(200)
+      .json({ message: "Users found", users, isError: false });
   } catch (error) {
-    console.log(error);
+    pushLogInFile(error);
     return res.status(500).json({ message: "Internal server error" });
   }
 }
 
 export async function getUser(req: Request, res: Response) {
   try {
-    if(req.params.id === undefined || req.params.id === null || req.params.id === "" || req.params.id === "undefined"){
-      return res.status(400).json({ message: "User id is not valid" });
+    if (
+      req.params.id === undefined ||
+      req.params.id === null ||
+      req.params.id === "" ||
+      req.params.id === "undefined"
+    ) {
+      return res
+        .status(200)
+        .json({ message: "User id is not valid", isError: true });
     }
     const user = await User.findOne({ _id: req.params.id });
 
     if (!user) {
-      return res.status(400).json({ message: "User not found" });
+      return res.status(200).json({ message: "User not found", isError: true });
     }
 
-    return res.status(200).json({ message: "User found", user });
+    return res
+      .status(200)
+      .json({ message: "User found", user, isError: false });
   } catch (error) {
-    console.log(error);
+    pushLogInFile(error);
     return res.status(500).json({ message: "Internal server error" });
   }
 }
@@ -92,12 +112,16 @@ export async function getUsers(req: Request, res: Response) {
     }
 
     if (!usersObject.length) {
-      return res.status(400).json({ message: "Users not found" });
+      return res
+        .status(200)
+        .json({ message: "Users not found", isError: true });
     }
 
-    return res.status(200).json({ message: "Users found", users: usersObject });
+    return res
+      .status(200)
+      .json({ message: "Users found", users: usersObject, isError: false });
   } catch (error) {
-    console.log(error);
+    pushLogInFile(error);
     return res.status(500).json({ message: "Internal server error" });
   }
 }
@@ -110,12 +134,16 @@ export async function getAssignedImagesUsers(req: Request, res: Response) {
     for (let i = 0; i < usersId.length; i++) {
       // check object id
       if (!mongoose.Types.ObjectId.isValid(usersId[i])) {
-        return res.status(400).json({ message: "Invalid id mongoose" });
+        return res
+          .status(200)
+          .json({ message: "Invalid id mongoose", isError: true });
       }
       const user = await User.findOne({ _id: usersId[i] });
 
       if (!user) {
-        return res.status(400).json({ message: "User not found" });
+        return res
+          .status(200)
+          .json({ message: "User not found", isError: true });
       }
 
       usersObject.push({
@@ -125,12 +153,16 @@ export async function getAssignedImagesUsers(req: Request, res: Response) {
     }
 
     if (!usersObject) {
-      return res.status(400).json({ message: "Users not found" });
+      return res
+        .status(200)
+        .json({ message: "Users not found", isError: true });
     }
 
-    return res.status(200).json({ message: "Users found", users: usersObject });
+    return res
+      .status(200)
+      .json({ message: "Users found", users: usersObject, isError: false });
   } catch (error) {
-    console.log(error);
+    pushLogInFile(error);
     return res.status(500).json({ message: "Internal server error" });
   }
 }
@@ -140,11 +172,13 @@ export async function deleteUser(req: Request, res: Response) {
     const { id } = req.params;
     const user = await User.findByIdAndDelete(id);
     if (!user) {
-      return res.status(400).json({ message: "User not found" });
+      return res.status(200).json({ message: "User not found", isError: true });
     }
-    return res.status(200).json({ message: "User deleted", user });
+    return res
+      .status(200)
+      .json({ message: "User deleted", user, isError: false });
   } catch (error) {
-    console.log(error);
+    pushLogInFile(error);
     return res.status(500).json({ message: "Internal server error" });
   }
 }
@@ -154,14 +188,18 @@ export async function deleteTaskByUser(req: Request, res: Response) {
     const { id } = req.params;
     const tasks = await Task.find({ author: new ObjectId(id) });
     if (!tasks) {
-      return res.status(400).json({ message: "Tasks not found" });
+      return res
+        .status(200)
+        .json({ message: "Tasks not found", isError: true });
     }
     for (let i = 0; i < tasks.length; i++) {
       await Task.findByIdAndDelete(tasks[i]._id);
     }
-    return res.status(200).json({ message: "Tasks deleted", tasks });
+    return res
+      .status(200)
+      .json({ message: "Tasks deleted", tasks, isError: false });
   } catch (error) {
-    console.log(error);
+    pushLogInFile(error);
     return res.status(500).json({ message: "Internal server error" });
   }
 }
@@ -172,11 +210,12 @@ export async function uploadAvatar(req: Request, res: Response) {
     const user = await User.findById(id);
 
     if (!user) {
-      return res.status(400).json({ message: "User not found" });
+      return res.status(200).json({ message: "User not found", isError: true });
     }
-    
+
     fs.readdirSync("./src/public/images/avatars").forEach((file) => {
-      if (file.split(".")[0] === id) fs.unlinkSync(`./src/public/images/avatars/${file}`);
+      if (file.split(".")[0] === id)
+        fs.unlinkSync(`./src/public/images/avatars/${file}`);
     });
 
     const storage = multer.diskStorage({
@@ -193,7 +232,9 @@ export async function uploadAvatar(req: Request, res: Response) {
     upload(req, res, async function (err) {
       if (err) {
         console.log(err);
-        return res.status(400).json({ message: "Error uploading file" });
+        return res
+          .status(200)
+          .json({ message: "Error uploading file", isError: true });
       }
       user.avatar = `${process.env.MAIN_URL}/images/avatars/${id}.${
         req.file.mimetype.split("/")[1]
@@ -202,7 +243,7 @@ export async function uploadAvatar(req: Request, res: Response) {
       return res.status(200).json({ message: "File uploaded", user });
     });
   } catch (error) {
-    console.log(error);
+    pushLogInFile(error);
     return res.status(500).json({ message: "Internal server error" });
   }
 }

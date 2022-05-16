@@ -5,23 +5,27 @@ import path from "path";
 import authRoutes from "./routes/auth-routes";
 import userRoutes from "./routes/user-routes";
 import tasksRoutes from "./routes/tasks-routes";
-import chatRoutes from './routes/chat-routes';
-import filesRoutes from './routes/files-routes';
+import chatRoutes from "./routes/chat-routes";
+import filesRoutes from "./routes/files-routes";
 import { connectToDB } from "./database/connection";
 import session from "express-session";
 import checkDashboardOptionsDB from "./utils/checkDashboardOptionsDB";
 import SocketController from "./controllers/chat/socket-controller";
 import { Server } from "socket.io";
-import {createServer} from "http";
+import { createServer } from "http";
 
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   serveClient: false,
   cors: {
-    origin: ['http://localhost:3000', 'https://dashboard-ticket-106-front.vercel.app', 'https://ticket106frontend.netlify.app'],
-  }
-})
+    origin: [
+      "http://localhost:3000",
+      "https://dashboard-ticket-106-front.vercel.app",
+      "https://ticket106frontend.netlify.app",
+    ],
+  },
+});
 
 require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
 
@@ -49,10 +53,17 @@ app.use(
   })
 );
 app.use(urlencoded({ extended: true }));
-app.use(cors({
-  origin: ['http://localhost:3000', 'https://dashboard-ticket-106-front.vercel.app', 'https://ticket106frontend.netlify.app'],
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "https://dashboard-ticket-106-front.vercel.app",
+      "https://ticket106frontend.netlify.app",
+      "http://192.168.1.89:3000",
+    ],
+    credentials: true,
+  })
+);
 app.use(json());
 app.use(morgan("tiny"));
 app.use(express.static(path.join(__dirname, "./public")));
@@ -69,7 +80,7 @@ connectToDB();
 //Checking dashboard options in DB
 checkDashboardOptionsDB();
 
-//Socket.io 
+//Socket.io
 SocketController(io);
 
 //Listening

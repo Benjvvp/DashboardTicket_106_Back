@@ -1,8 +1,6 @@
 import { Router } from "express";
 import {
   addUserToTask,
-  changeTaskProgress,
-  changeTaskStatus,
   createTask,
   deleteTask,
   editTask,
@@ -28,9 +26,5 @@ router.post('/removeUserToTask/:id', authToken, removeUserToTask);
 
 router.put('/editTask/:id', authToken, editTask);
 router.delete('/deleteTask/:id', authToken, deleteTask);
-
-router.post('/changeTaskStatus/:id', authToken, changeTaskStatus);
-router.post('/changeTaskProgress/:id', authToken, changeTaskProgress);
-
 
 export default router;

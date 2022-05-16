@@ -4,6 +4,9 @@ import User from "../database/models/User";
 
 export default async function authToken (req: Request, res: Response, next: NextFunction) {
   const token = req.headers.authorization.replace("Bearer ", "");
+  if(!token){
+    return res.status(401).json({message:'Interal server error'})
+  }
   try {
     const decoded = verify(token, process.env.JWT_SECRET_KEY as string) as any;
     const user = await User.findById(decoded.id);
