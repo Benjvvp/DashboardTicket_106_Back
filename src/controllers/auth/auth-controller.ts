@@ -40,7 +40,7 @@ export async function loginUser(req: Request, res: Response) {
 
 export async function loginWithToken(req: Request, res: Response) {
   try {
-    const token = req.headers.authorization.split(" ")[1] as string;
+    const token = req.headers.authorization.split(" ")[1] as string | undefined;
     if (!token) {
       return res
         .status(200)
