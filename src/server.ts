@@ -23,6 +23,7 @@ const io = new Server(httpServer, {
       "http://localhost:3000",
       "https://dashboard-ticket-106-front.vercel.app",
       "https://ticket106frontend.netlify.app",
+      "http://162.212.153.119"
     ],
   },
 });
@@ -60,6 +61,7 @@ app.use(
       "https://dashboard-ticket-106-front.vercel.app",
       "https://ticket106frontend.netlify.app",
       "http://192.168.1.89:3000",
+      "http://162.212.153.119"
     ],
     credentials: true,
   })
