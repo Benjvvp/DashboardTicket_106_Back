@@ -9,7 +9,7 @@ export function pushLogInFile(log: string) {
     if (!fs.existsSync(path.join(__dirname, `../logs`))) {
       fs.mkdirSync(path.join(__dirname, `../logs`));
     }
-    const logFile = path.join(__dirname, `../logs/${dateString}-log.txt`);
+    const logFile = path.join(__dirname, `../logs/${dateString.toString().replace('/', '-')}-log.txt`);
     if (!fs.existsSync(logFile)) {
       fs.writeFileSync(logFile, `${dateString} ${timeString} - ${log}`);
     } else {
