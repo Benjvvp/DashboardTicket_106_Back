@@ -1,5 +1,4 @@
 import DashboardOptions from "../database/models/DashboardOptions";
-import User from "../database/models/User";
 
 export default function checkDashboardOptionsDB() {
   //Check if the DashboardOptions collection is empty

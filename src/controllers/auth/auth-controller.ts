@@ -30,7 +30,7 @@ export async function loginUser(req: Request, res: Response) {
     res
       .status(200)
       .json({ message: "User logged in", user, token, isError: false });
-  } catch (error: any) {
+  } catch (error) {
     let message = "Unkwon error";
     if (error instanceof Error) message = error.message;
     pushLogInFile(message);
@@ -49,14 +49,14 @@ export async function loginWithToken(req: Request, res: Response) {
     const decoded = jwt.verify(
       token,
       process.env.JWT_SECRET_KEY as string
-    ) as any;
+    ) as { email: string; id: string };
     const user = await User.findById(decoded.id);
 
     if (!user) {
       return res.status(200).json({ message: "User not found", isError: true });
     }
     res.status(200).json({ message: "User logged in", user, isError: false });
-  } catch (error: any) {
+  } catch (error) {
     let message = "Unkwon error";
     if (error instanceof Error) message = error.message;
     pushLogInFile(message);
@@ -131,7 +131,7 @@ export async function registerUser(req: Request, res: Response) {
       token,
       isError: false,
     });
-  } catch (error: any) {
+  } catch (error) {
     let message = "Unkwon error";
     if (error instanceof Error) message = error.message;
     pushLogInFile(message);

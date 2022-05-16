@@ -13,7 +13,7 @@ export async function createTask(req: Request, res: Response) {
       category: string;
     };
   const tasks = await Task.find({});
-  let fieldRequired = [];
+  const fieldRequired = [];
   if (!title) fieldRequired.push("title");
   if (!description) fieldRequired.push("description");
   if (!author) fieldRequired.push("author");
@@ -148,7 +148,7 @@ export async function removeUserToTask(req: Request, res: Response) {
     if (!task) {
       return res.status(200).json({ message: "Task not found", isError: true });
     }
-    task.assignedUsers = task.assignedUsers.filter((user: any) => {
+    task.assignedUsers = task.assignedUsers.filter((user: {userId: string}) => {
       return user.toString() !== userId;
     });
     await task.save();

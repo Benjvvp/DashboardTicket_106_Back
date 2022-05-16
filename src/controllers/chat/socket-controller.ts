@@ -114,7 +114,7 @@ const SocketController = (
       });
     });
   });
-  io.on("disconnect", (socket: Socket) => {
+  io.on("disconnect", () => {
     console.log("User disconnected");
   });
 };

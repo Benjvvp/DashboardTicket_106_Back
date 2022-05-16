@@ -15,59 +15,73 @@ const storage = multer.diskStorage({
 export function getFilesAverageType(req: Request, res: Response) {
   try {
     let totalFiles = 0;
-    let document: number = 0,
-      video: number = 0,
-      audio: number = 0,
-      images: number = 0,
-      exe: number = 0,
-      other: number = 0;
+    let document = 0,
+      video = 0,
+      audio = 0,
+      images = 0,
+      exe = 0,
+      other = 0;
     fs.readdirSync("./src/public/files").forEach((file) => {
       fs.readdirSync(`./src/public/files/${file}`).forEach((file) => {
         totalFiles++;
         switch (file.split(".")[1]) {
           case "doc":
             document++;
+            break;
           case "docx":
             document++;
+            break;
           case "pdf":
             document++;
+            break;
           case "txt":
             document++;
             break;
           case "mp4":
             video++;
+            break;
           case "avi":
             video++;
+            break;
           case "mkv":
             video++;
+            break;
           case "flv":
             video++;
             break;
           case "mp3":
             audio++;
+            break;
           case "wav":
             audio++;
+            break;
           case "wma":
             audio++;
             break;
           case "jpg":
             images++;
+            break;
           case "jpeg":
             images++;
+            break;
           case "png":
             images++;
+            break;
           case "gif":
             images++;
             break;
           case "exe":
             exe++;
+            break;
           case "msi":
             exe++;
+            break;
           case "zip":
             exe++;
             break;
           default:
             other++;
+            break;
         }
       });
     });

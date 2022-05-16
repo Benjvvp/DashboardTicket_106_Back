@@ -1,6 +1,3 @@
-import fs from "fs";
-import path from "path";
-
 export function pushLogInFile(log: string) {
   try {
     const date = new Date();
