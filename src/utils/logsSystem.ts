@@ -9,12 +9,14 @@ export function pushLogInFile(log: string) {
     if (!fs.existsSync(path.join(__dirname, `../logs`))) {
       fs.mkdirSync(path.join(__dirname, `../logs`));
     }
-    const logFile = path.join(__dirname, `../logs/${dateString.toString().replace('/', '-')}-log.txt`);
-    if (!fs.existsSync(logFile)) {
-      fs.writeFileSync(logFile, `${dateString} ${timeString} - ${log}`);
-    } else {
-      fs.appendFileSync(logFile, `\n${dateString} ${timeString} - ${log}`);
-    }
+
+    const file = fs.createWriteStream(
+      path.join(__dirname, `../logs/logs-${dateString}.txt`),
+      { flags: "a" }
+    );
+    file.write(`${timeString} - ${log}\n`);
+    file.end();
+    
   } catch (error) {
     console.log(error);
   }
