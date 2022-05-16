@@ -40,8 +40,9 @@ export async function loginUser(req: Request, res: Response) {
 
 export async function loginWithToken(req: Request, res: Response) {
   try {
-    const token = req.headers.authorization.split(" ")[1] as string | undefined;
-    if (!token) {
+    //object is possible to be undefined
+    const token = req.headers.authorization.split(" ")[1] as string | undefined | null;
+    if (!token || token === "" || token === "undefined") {
       return res
         .status(200)
         .json({ message: "Token not found", isError: true });
