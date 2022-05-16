@@ -6,7 +6,10 @@ export function pushLogInFile(log: string) {
     const date = new Date();
     const dateString = date.toLocaleDateString();
     const timeString = date.toLocaleTimeString();
-    const logFile = path.join(__dirname, `../../../logs/${dateString}-log.txt`);
+    if (!fs.existsSync(path.join(__dirname, `../logs`))) {
+      fs.mkdirSync(path.join(__dirname, `../logs`));
+    }
+    const logFile = path.join(__dirname, `../logs/${dateString}-log.txt`);
     if (!fs.existsSync(logFile)) {
       fs.writeFileSync(logFile, `${dateString} ${timeString} - ${log}`);
     } else {
