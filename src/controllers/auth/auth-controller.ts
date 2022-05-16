@@ -30,15 +30,22 @@ export async function loginUser(req: Request, res: Response) {
     res
       .status(200)
       .json({ message: "User logged in", user, token, isError: false });
-  } catch (error) {
-    pushLogInFile(error);
+  } catch (error: any) {
+    let message = "Unkwon error";
+    if (error instanceof Error) message = error.message;
+    pushLogInFile(message);
     return res.status(500).json({ message: "Internal server error" });
   }
 }
 
 export async function loginWithToken(req: Request, res: Response) {
   try {
-    const token = req.headers.authorization.split(" ")[1] as any;
+    const token = req.headers.authorization.split(" ")[1] as string;
+    if (!token) {
+      return res
+        .status(200)
+        .json({ message: "Token not found", isError: true });
+    }
     const decoded = jwt.verify(
       token,
       process.env.JWT_SECRET_KEY as string
@@ -49,9 +56,10 @@ export async function loginWithToken(req: Request, res: Response) {
       return res.status(200).json({ message: "User not found", isError: true });
     }
     res.status(200).json({ message: "User logged in", user, isError: false });
-  } catch (error) {
-    pushLogInFile(error);
-    return res.status(500).json({ message: "Internal server error" });
+  } catch (error: any) {
+    let message = "Unkwon error";
+    if (error instanceof Error) message = error.message;
+    pushLogInFile(message);
   }
 }
 export async function registerUser(req: Request, res: Response) {
@@ -96,12 +104,10 @@ export async function registerUser(req: Request, res: Response) {
     }
 
     if (password !== passwordConfirmation) {
-      return res
-        .status(200)
-        .json({
-          message: "Password and password confirmation do not match",
-          isError: true,
-        });
+      return res.status(200).json({
+        message: "Password and password confirmation do not match",
+        isError: true,
+      });
     }
 
     const hashedPassword = bcryptjs.hashSync(password, 10);
@@ -119,16 +125,15 @@ export async function registerUser(req: Request, res: Response) {
       process.env.JWT_SECRET_KEY as string
     );
 
-    res
-      .status(200)
-      .json({
-        message: "User registered",
-        user: newUser,
-        token,
-        isError: false,
-      });
-  } catch (error) {
-    pushLogInFile(error);
-    return res.status(500).json({ message: "Internal server error" });
+    res.status(200).json({
+      message: "User registered",
+      user: newUser,
+      token,
+      isError: false,
+    });
+  } catch (error: any) {
+    let message = "Unkwon error";
+    if (error instanceof Error) message = error.message;
+    pushLogInFile(message);
   }
 }
