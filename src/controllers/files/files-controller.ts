@@ -121,7 +121,7 @@ export function getFolders(req: Request, res: Response) {
     let folders = [] as any;
     if(!fs.existsSync("c")) {
       fs.mkdirSync("./src/public/files");
-      res.status(200).json({
+      return res.status(200).json({
         message: "Doesn't exist any folder",
         isError: false,
       });
