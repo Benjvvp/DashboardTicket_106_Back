@@ -119,7 +119,7 @@ export function getFilesAverageType(req: Request, res: Response) {
 export function getFolders(req: Request, res: Response) {
   try {
     let folders = [] as any;
-    if(!fs.existsSync("./src/public/files")) {
+    if (!fs.existsSync("./src/public/files")) {
       fs.mkdirSync("./src/public/files");
       return res.status(200).json({
         message: "Doesn't exist any folder",
@@ -162,6 +162,15 @@ export function createFolder(req: Request, res: Response) {
         isError: true,
       });
     }
+    if (folderName.indexOf(" ") !== -1) {
+      return res.status(200).json({
+        message: "Folder name can't have space",
+        isError: true,
+      });
+    }
+    if (!fs.existsSync("./src/public/files")) {
+      fs.mkdirSync("./src/public/files");
+    }
     if (fs.existsSync(`./src/public/files/${folderName}`)) {
       return res.status(200).json({
         message: "Folder already exists",
@@ -171,6 +180,46 @@ export function createFolder(req: Request, res: Response) {
     fs.mkdirSync(`./src/public/files/${folderName}`);
     return res.status(200).json({
       message: "Folder created",
+      isError: false,
+    });
+  } catch (error: any) {
+    pushLogInFile(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export function getFilesInFolder(req: Request, res: Response) {
+  try {
+    const folderName = req.params.folderName as string;
+    if (!folderName) {
+      return res.status(200).json({
+        message: "Folder name is required",
+        isError: true,
+      });
+    }
+    if (!fs.existsSync("./src/public/files")) {
+      fs.mkdirSync("./src/public/files");
+    }
+    if (!fs.existsSync(`./src/public/files/${folderName}`)) {
+      return res.status(200).json({
+        message: "Folder doesn't exist",
+        isError: true,
+      });
+    }
+    const files = [] as any;
+    fs.readdirSync(`./src/public/files/${folderName}`).forEach((file) => {
+      const fileData = fs.statSync(`./src/public/files/${folderName}/${file}`);
+      files.push({
+        fileName: file.split(".")[0],
+        fileType: file.split(".")[1],
+        fileSize: fileData.blksize / 1000 + " KB",
+        fileDate: fileData.birthtime,
+        filePath: `/files/${folderName}/${file}`
+      });
+    });
+      return res.status(200).json({
+      message: "Folder files",
+      files,
       isError: false,
     });
   } catch (error: any) {
