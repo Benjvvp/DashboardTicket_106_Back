@@ -2,15 +2,8 @@ import { Request, Response } from "express";
 import multer from "multer";
 import fs from "fs";
 import { pushLogInFile } from "../../utils/logsSystem";
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "./src/public/files");
-  },
-  filename: (req, file, cb) => {
-    cb(null, file.originalname);
-  },
-});
+import archiver from "archiver";
+import User from "../../database/models/User";
 
 export function getFilesAverageType(req: Request, res: Response) {
   try {
@@ -133,14 +126,22 @@ export function getFolders(req: Request, res: Response) {
     });
     //Get count of files in each folder
     folders = folders.map((folder: any) => {
+      let size = 0;
       let files = 0;
+      let dateCreated = fs.statSync(`./src/public/files/${folder}`).birthtime;
       fs.readdirSync(`./src/public/files/${folder}`).forEach((file: any) => {
         files++;
+        size += fs.statSync(`./src/public/files/${folder}/${file}`).size;
       });
       return {
         folder,
         files,
+        size,
+        dateCreated,
       };
+    });
+    folders.sort((a: any, b: any) => {
+      return b.dateCreated - a.dateCreated;
     });
     return res.status(200).json({
       message: "Folders",
@@ -212,15 +213,338 @@ export function getFilesInFolder(req: Request, res: Response) {
       files.push({
         fileName: file.split(".")[0],
         fileType: file.split(".")[1],
-        fileSize: fileData.blksize / 1000 + " KB",
+        fileSize:
+          fileData.size / 1000 > 1000
+            ? `${(fileData.size / 1000000).toFixed(2)} MB`
+            : `${(fileData.size / 1000).toFixed(2)} KB`,
         fileDate: fileData.birthtime,
-        filePath: `/files/${folderName}/${file}`
+        filePath: `/files/${folderName}/${file}`,
       });
     });
-      return res.status(200).json({
+    return res.status(200).json({
       message: "Folder files",
       files,
       isError: false,
+    });
+  } catch (error: any) {
+    pushLogInFile(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export async function uploadFileInFolder(req: Request, res: Response) {
+  try {
+    const folderName = req.params.folderName as string;
+    const userId = req.params.userId as string;
+
+    if (!folderName) {
+      return res.status(200).json({
+        message: "Folder name is required",
+        isError: true,
+      });
+    }
+    if (!fs.existsSync("./src/public/files")) {
+      fs.mkdirSync("./src/public/files");
+    }
+    if (!fs.existsSync(`./src/public/files/${folderName}`)) {
+      return res.status(200).json({
+        message: "Folder doesn't exist",
+        isError: true,
+      });
+    }
+
+    //Save file in folder
+    const storage = multer.diskStorage({
+      destination: (req, file, cb) => {
+        cb(null, `./src/public/files/${folderName}`);
+      },
+      filename: (req, file, cb) => {
+        cb(null, `${file.originalname}`);
+      },
+    });
+    const upload = multer({ storage }).array("files");
+    upload(req, res, async (err: any) => {
+      if (err) {
+        return res.status(200).json({
+          message: "Error uploading file",
+          isError: true,
+        });
+      }
+      const user = await User.findOne({ _id: userId });
+      if (!user) {
+        return res.status(200).json({
+          message: "User doesn't exist",
+          isError: true,
+        });
+      }
+
+      user.filesPushed = user.filesPushed + req.files.length;
+      await user.save();
+
+      return res.status(200).json({
+        message: "Files uploaded",
+        isError: false,
+      });
+    });
+  } catch (error: any) {
+    pushLogInFile(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export function deleteFiles(req: Request, res: Response) {
+  try {
+    const folderName = req.body.folderName as string;
+    const filesNames = req.body.filesNames as string;
+
+    if (!folderName) {
+      return res.status(200).json({
+        message: "Folder name is required",
+        isError: true,
+      });
+    }
+
+    if (!filesNames) {
+      return res.status(200).json({
+        message: "File name is required",
+        isError: true,
+      });
+    }
+
+    if (!fs.existsSync("./src/public/files")) {
+      fs.mkdirSync("./src/public/files");
+    }
+    if (!fs.existsSync(`./src/public/files/${folderName}`)) {
+      return res.status(200).json({
+        message: "Folder doesn't exist",
+        isError: true,
+      });
+    }
+    const filesDeleteCorrectly = [] as any;
+    const filesDeleteError = [] as any;
+
+    filesNames.split("/").forEach((file) => {
+      if (!fs.existsSync(`./src/public/files/${folderName}/${file}`)) {
+        filesDeleteError.push(file);
+      } else {
+        fs.unlinkSync(`./src/public/files/${folderName}/${file}`);
+        filesDeleteCorrectly.push(file);
+      }
+    });
+
+    if (filesDeleteError.length === filesNames.split("/").length) {
+      return res.status(200).json({
+        message: "All files doesn't exist or error in deleting",
+        isError: true,
+      });
+    }
+
+    return res.status(200).json({
+      message: "Files deleted",
+      filesDeleteCorrectly,
+      filesDeleteError,
+      isError: false,
+    });
+  } catch (error: any) {
+    pushLogInFile(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export function downloadFiles(req: Request, res: Response) {
+  try {
+    const folderName = req.body.folderName as string;
+    const filesNames = req.body.filesNames as string;
+
+    if (!folderName) {
+      return res.status(200).json({
+        message: "Folder name is required",
+        isError: true,
+      });
+    }
+
+    if (!filesNames) {
+      return res.status(200).json({
+        message: "File name is required",
+        isError: true,
+      });
+    }
+
+    if (!fs.existsSync("./src/public/files")) {
+      fs.mkdirSync("./src/public/files");
+    }
+    if (!fs.existsSync(`./src/public/files/${folderName}`)) {
+      return res.status(200).json({
+        message: "Folder doesn't exist",
+        isError: true,
+      });
+    }
+    const filesDownloadCorrectly = [] as any;
+    const filesDownloadError = [] as any;
+
+    filesNames.split("/").forEach((file) => {
+      if (!fs.existsSync(`./src/public/files/${folderName}/${file}`)) {
+        filesDownloadError.push(file);
+      } else {
+        filesDownloadCorrectly.push(file);
+      }
+    });
+
+    if (filesDownloadError.length === filesNames.split("/").length) {
+      return res.status(200).json({
+        message: "All files doesn't exist or error in downloading",
+        isError: true,
+      });
+    }
+
+    if (filesDownloadCorrectly.length === 1) {
+      res.download(
+        `./src/public/files/${folderName}/${filesDownloadCorrectly[0]}`,
+        filesDownloadCorrectly[0],
+        (err: any) => {
+          if (err) {
+            return res.status(200).json({
+              message: "Error downloading file",
+              isError: true,
+            });
+          }
+        }
+      );
+    } else {
+      const zip = archiver("zip");
+      res.attachment(`${folderName}.zip`);
+      zip.pipe(res);
+      filesDownloadCorrectly.forEach((file) => {
+        zip.append(
+          fs.createReadStream(`./src/public/files/${folderName}/${file}`),
+          { name: file }
+        );
+      });
+      zip.finalize();
+    }
+  } catch (error: any) {
+    pushLogInFile(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export function deleteFolder(req: Request, res: Response) {
+  try {
+    const folderName = req.params.folderName as string;
+    if (!folderName) {
+      return res.status(200).json({
+        message: "Folder name is required",
+        isError: true,
+      });
+    }
+    if (!fs.existsSync("./src/public/files")) {
+      fs.mkdirSync("./src/public/files");
+    }
+    if (!fs.existsSync(`./src/public/files/${folderName}`)) {
+      return res.status(200).json({
+        message: "Folder doesn't exist",
+        isError: true,
+      });
+    }
+    fs.rmdirSync(`./src/public/files/${folderName}`, { recursive: true });
+    return res.status(200).json({
+      message: "Folder deleted",
+      isError: false,
+    });
+  } catch (error: any) {
+    pushLogInFile(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export function changeFileName(req: Request, res: Response) {
+  try {
+    const folderName = req.body.folderName as string;
+    const oldFileName = req.body.oldFileName as string;
+    const newFileName = req.body.newFileName as string;
+    const fileType = req.body.fileType as string;
+
+    console.log(folderName, oldFileName, newFileName, fileType);
+    if (!folderName) {
+      return res.status(200).json({
+        message: "Folder name is required",
+        isError: true,
+      });
+    }
+
+    if (!oldFileName) {
+      return res.status(200).json({
+        message: "Old file name is required",
+        isError: true,
+      });
+    }
+
+    if (!newFileName) {
+      return res.status(200).json({
+        message: "New file name is required",
+        isError: true,
+      });
+    }
+
+    if (!fs.existsSync("./src/public/files")) {
+      fs.mkdirSync("./src/public/files");
+    }
+    if (!fs.existsSync(`./src/public/files/${folderName}`)) {
+      return res.status(200).json({
+        message: "Folder doesn't exist",
+        isError: true,
+      });
+    }
+    if (
+      !fs.existsSync(
+        `./src/public/files/${folderName}/${oldFileName}.${fileType}`
+      )
+    ) {
+      return res.status(200).json({
+        message: "File doesn't exist",
+        isError: true,
+      });
+    }
+
+    fs.renameSync(
+      `./src/public/files/${folderName}/${oldFileName}.${fileType}`,
+      `./src/public/files/${folderName}/${newFileName}.${fileType}`
+    );
+
+    return res.status(200).json({
+      message: "File name changed",
+      isError: false,
+    });
+  } catch (error: any) {
+    pushLogInFile(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export function getFiles(req: Request, res: Response) {
+  try {
+    if (!fs.existsSync("./src/public/files")) {
+      fs.mkdirSync("./src/public/files");
+    }
+    const folders = fs.readdirSync("./src/public/files");
+    const files = [] as any;
+    folders.forEach((folder) => {
+      const filesInFolder = fs.readdirSync(`./src/public/files/${folder}`);
+      filesInFolder.forEach((file) => {
+        const fileData = fs.statSync(`./src/public/files/${folder}/${file}`);
+        files.push({
+          folderName: folder,
+          fileName: file,
+          fileSize: fileData.size,
+          fileModified: fileData.mtime,
+        });
+      });
+    });
+    console.log(files);
+    return res.status(200).json({
+      message: "Files",
+      isError: false,
+      files,
     });
   } catch (error: any) {
     pushLogInFile(error);
