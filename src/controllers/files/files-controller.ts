@@ -4,6 +4,7 @@ import fs from "fs";
 import { pushLogInFile } from "../../utils/logsSystem";
 import archiver from "archiver";
 import User from "../../database/models/User";
+import File from "../../database/models/File";
 
 export function getFilesAverageType(req: Request, res: Response) {
   try {
@@ -208,9 +209,9 @@ export function getFilesInFolder(req: Request, res: Response) {
       });
     }
     const files = [] as any;
-    fs.readdirSync(`./src/public/files/${folderName}`).forEach((file) => {
+    fs.readdirSync(`./src/public/files/${folderName}`).forEach(async (file) => {
       const fileData = fs.statSync(`./src/public/files/${folderName}/${file}`);
-      files.push({
+      await files.push({
         fileName: file.split(".")[0],
         fileType: file.split(".")[1],
         fileSize:
@@ -270,6 +271,7 @@ export async function uploadFileInFolder(req: Request, res: Response) {
           isError: true,
         });
       }
+
       const user = await User.findOne({ _id: userId });
       if (!user) {
         return res.status(200).json({
@@ -280,6 +282,23 @@ export async function uploadFileInFolder(req: Request, res: Response) {
 
       user.filesPushed = user.filesPushed + req.files.length;
       await user.save();
+
+      //Save file into database
+      const fileKeys = Object.keys(req.files);
+      fileKeys.forEach(async (fileKey: any) => {
+        const file = req.files[fileKey];
+        console.log(file);
+        const isFileExist = await File.findOne({
+          path: `/files/${folderName}/${file.originalname}`,
+        });
+        if (!isFileExist) {
+          const filePush = new File({
+            name: file.originalname,
+            path: `/files/${folderName}/${file.originalname}`,
+          });
+          filePush.save();
+        }
+      });
 
       return res.status(200).json({
         message: "Files uploaded",
@@ -323,10 +342,18 @@ export function deleteFiles(req: Request, res: Response) {
     const filesDeleteCorrectly = [] as any;
     const filesDeleteError = [] as any;
 
-    filesNames.split("/").forEach((file) => {
+    filesNames.split("/").forEach(async (file) => {
       if (!fs.existsSync(`./src/public/files/${folderName}/${file}`)) {
         filesDeleteError.push(file);
       } else {
+        const F = await File.findOne({
+          path: `/files/${folderName}/${file}`,
+        });
+        if (F) {
+          F.delete();
+          F.save();
+        }
+
         fs.unlinkSync(`./src/public/files/${folderName}/${file}`);
         filesDeleteCorrectly.push(file);
       }
@@ -464,7 +491,6 @@ export function changeFileName(req: Request, res: Response) {
     const newFileName = req.body.newFileName as string;
     const fileType = req.body.fileType as string;
 
-    console.log(folderName, oldFileName, newFileName, fileType);
     if (!folderName) {
       return res.status(200).json({
         message: "Folder name is required",
@@ -540,7 +566,7 @@ export function getFiles(req: Request, res: Response) {
         });
       });
     });
-    console.log(files);
+
     return res.status(200).json({
       message: "Files",
       isError: false,
