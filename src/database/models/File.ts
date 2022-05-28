@@ -12,6 +12,7 @@ const FileSchema = new Schema({
     type: String,
     required: true,
     unique: true,
+    indexes: true,
   },
 });
 

@@ -110,7 +110,7 @@ export function getFilesAverageType(req: Request, res: Response) {
   }
 }
 
-export function getFolders(req: Request, res: Response) {
+export async function getFolders(req: Request, res: Response) {
   try {
     let folders = [] as any;
     if (!fs.existsSync("./src/public/files")) {
@@ -121,12 +121,10 @@ export function getFolders(req: Request, res: Response) {
       });
     }
     fs.readdirSync("./src/public/files").forEach((file) => {
-      if (file.split(".")[0] !== ".") {
-        folders.push(file);
-      }
+      if (file.split(".")[0] !== ".") folders.push(file);
     });
     //Get count of files in each folder
-    folders = folders.map((folder: any) => {
+    folders = await folders.map((folder: any) => {
       let size = 0;
       let files = 0;
       let dateCreated = fs.statSync(`./src/public/files/${folder}`).birthtime;
@@ -190,7 +188,7 @@ export function createFolder(req: Request, res: Response) {
   }
 }
 
-export function getFilesInFolder(req: Request, res: Response) {
+export async function getFilesInFolder(req: Request, res: Response) {
   try {
     const folderName = req.params.folderName as string;
     if (!folderName) {
@@ -208,25 +206,51 @@ export function getFilesInFolder(req: Request, res: Response) {
         isError: true,
       });
     }
-    const files = [] as any;
-    fs.readdirSync(`./src/public/files/${folderName}`).forEach(async (file) => {
-      const fileData = fs.statSync(`./src/public/files/${folderName}/${file}`);
-      await files.push({
-        fileName: file.split(".")[0],
-        fileType: file.split(".")[1],
-        fileSize:
-          fileData.size / 1000 > 1000
-            ? `${(fileData.size / 1000000).toFixed(2)} MB`
-            : `${(fileData.size / 1000).toFixed(2)} KB`,
-        fileDate: fileData.birthtime,
-        filePath: `/files/${folderName}/${file}`,
+    const files = [] as Array<any>;
+
+    const filesInDB = await File.find({
+      $text: { $search: "/files/Videos", $caseSensitive: true },
+    });
+
+    new Promise((resolve, reject) => {
+      fs.readdirSync(`./src/public/files/${folderName}`).forEach(
+        async (file) => {
+          const fileInDB = await filesInDB.find(
+            (f: any) => f.path === `/files/${folderName}/${file}`
+          );
+          if (fileInDB) {
+            const fileData = fs.statSync(
+              `./src/public/files/${folderName}/${file}`
+            );
+
+            files.push({
+              fileId: fileInDB._id ? fileInDB._id : "",
+              fileDescription: fileInDB.description ? fileInDB.description : "",
+              fileName: file.split(".")[0],
+              fileType: file.split(".")[1],
+              fileSize:
+                fileData.size / 1000 > 1000
+                  ? `${(fileData.size / 1000000).toFixed(2)} MB`
+                  : `${(fileData.size / 1000).toFixed(2)} KB`,
+              fileDate: fileData.birthtime,
+              filePath: `/files/${folderName}/${file}`,
+            });
+          }
+        }
+      );
+      resolve(files);
+    })
+      .then(() => {
+        return res.status(200).json({
+          message: "Files in folder",
+          files,
+          isError: false,
+        });
+      })
+      .catch((error: any) => {
+        pushLogInFile(error);
+        return res.status(500).json({ message: "Internal server error" });
       });
-    });
-    return res.status(200).json({
-      message: "Folder files",
-      files,
-      isError: false,
-    });
   } catch (error: any) {
     pushLogInFile(error);
     return res.status(500).json({ message: "Internal server error" });
@@ -287,7 +311,6 @@ export async function uploadFileInFolder(req: Request, res: Response) {
       const fileKeys = Object.keys(req.files);
       fileKeys.forEach(async (fileKey: any) => {
         const file = req.files[fileKey];
-        console.log(file);
         const isFileExist = await File.findOne({
           path: `/files/${folderName}/${file.originalname}`,
         });
@@ -313,19 +336,11 @@ export async function uploadFileInFolder(req: Request, res: Response) {
 
 export function deleteFiles(req: Request, res: Response) {
   try {
-    const folderName = req.body.folderName as string;
-    const filesNames = req.body.filesNames as string;
+    const idFiles = req.body.idFiles as string;
 
-    if (!folderName) {
+    if (!idFiles) {
       return res.status(200).json({
-        message: "Folder name is required",
-        isError: true,
-      });
-    }
-
-    if (!filesNames) {
-      return res.status(200).json({
-        message: "File name is required",
+        message: "Files id is required",
         isError: true,
       });
     }
@@ -333,33 +348,30 @@ export function deleteFiles(req: Request, res: Response) {
     if (!fs.existsSync("./src/public/files")) {
       fs.mkdirSync("./src/public/files");
     }
-    if (!fs.existsSync(`./src/public/files/${folderName}`)) {
-      return res.status(200).json({
-        message: "Folder doesn't exist",
-        isError: true,
-      });
-    }
+
     const filesDeleteCorrectly = [] as any;
     const filesDeleteError = [] as any;
 
-    filesNames.split("/").forEach(async (file) => {
-      if (!fs.existsSync(`./src/public/files/${folderName}/${file}`)) {
-        filesDeleteError.push(file);
-      } else {
-        const F = await File.findOne({
-          path: `/files/${folderName}/${file}`,
-        });
-        if (F) {
-          F.delete();
-          F.save();
-        }
 
-        fs.unlinkSync(`./src/public/files/${folderName}/${file}`);
-        filesDeleteCorrectly.push(file);
-      }
+    idFiles.split("/").forEach(async (file) => {
+      const fileInDB = await File.findOne({ _id: file });
+      if (fileInDB) {
+        const path = fileInDB.path;
+        const fileName = path.split("/")[3];
+        const folderName = path.split("/")[2];
+        const filePath = `./src/public/files/${folderName}/${fileName}`;
+
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+          fileInDB.delete();
+          filesDeleteCorrectly.push(fileInDB._id);
+        } else {
+          filesDeleteError.push(fileInDB._id);
+        }
+      }  
     });
 
-    if (filesDeleteError.length === filesNames.split("/").length) {
+    if (filesDeleteError.length === idFiles.split("/").length) {
       return res.status(200).json({
         message: "All files doesn't exist or error in deleting",
         isError: true,
@@ -484,61 +496,44 @@ export function deleteFolder(req: Request, res: Response) {
   }
 }
 
-export function changeFileName(req: Request, res: Response) {
+export async function updateFile(req: Request, res: Response) {
   try {
-    const folderName = req.body.folderName as string;
-    const oldFileName = req.body.oldFileName as string;
-    const newFileName = req.body.newFileName as string;
-    const fileType = req.body.fileType as string;
-
-    if (!folderName) {
-      return res.status(200).json({
-        message: "Folder name is required",
-        isError: true,
-      });
-    }
-
-    if (!oldFileName) {
-      return res.status(200).json({
-        message: "Old file name is required",
-        isError: true,
-      });
-    }
-
-    if (!newFileName) {
-      return res.status(200).json({
-        message: "New file name is required",
-        isError: true,
-      });
-    }
+    const idFile = req.body.idFile as string;
+    const fileNameEditing = req.body.fileNameEditing as string;
+    const fileDescriptionEditing = req.body.fileDescriptionEditing as string;
 
     if (!fs.existsSync("./src/public/files")) {
       fs.mkdirSync("./src/public/files");
     }
-    if (!fs.existsSync(`./src/public/files/${folderName}`)) {
-      return res.status(200).json({
-        message: "Folder doesn't exist",
-        isError: true,
-      });
-    }
-    if (
-      !fs.existsSync(
-        `./src/public/files/${folderName}/${oldFileName}.${fileType}`
-      )
-    ) {
-      return res.status(200).json({
-        message: "File doesn't exist",
-        isError: true,
-      });
+
+    const fileInDB = await File.findById({ _id: idFile });
+
+    if (fileNameEditing.length > 0) {
+      fs.renameSync(
+        `./src/public${fileInDB.path}`,
+        `./src/public${fileInDB.path.replace(
+          fileInDB.name,
+          `${fileNameEditing}.${fileInDB.name.split(".")[1]}`
+        )}`
+      );
+
+      const newPath = fileInDB.path.replace(
+        fileInDB.name,
+        `${fileNameEditing}.${fileInDB.name.split(".")[1]}`
+      );
+
+      fileInDB.name = `${fileNameEditing}.${fileInDB.name.split(".")[1]}`;
+      fileInDB.path = newPath;
     }
 
-    fs.renameSync(
-      `./src/public/files/${folderName}/${oldFileName}.${fileType}`,
-      `./src/public/files/${folderName}/${newFileName}.${fileType}`
-    );
+    if (fileDescriptionEditing.length > 0) {
+      fileInDB.description = fileDescriptionEditing;
+    }
+    fileInDB.save();
 
     return res.status(200).json({
-      message: "File name changed",
+      message: "File updated",
+
       isError: false,
     });
   } catch (error: any) {
@@ -547,30 +542,111 @@ export function changeFileName(req: Request, res: Response) {
   }
 }
 
-export function getFiles(req: Request, res: Response) {
+export async function getFiles(req: Request, res: Response) {
   try {
     if (!fs.existsSync("./src/public/files")) {
       fs.mkdirSync("./src/public/files");
     }
     const folders = fs.readdirSync("./src/public/files");
     const files = [] as any;
-    folders.forEach((folder) => {
-      const filesInFolder = fs.readdirSync(`./src/public/files/${folder}`);
-      filesInFolder.forEach((file) => {
-        const fileData = fs.statSync(`./src/public/files/${folder}/${file}`);
-        files.push({
-          folderName: folder,
-          fileName: file,
-          fileSize: fileData.size,
-          fileModified: fileData.mtime,
-        });
-      });
-    });
 
-    return res.status(200).json({
-      message: "Files",
-      isError: false,
-      files,
+    const filesInDB = await File.find();
+
+    new Promise((resolve, reject) => {
+      folders.forEach(async (folderName) => {
+        fs.readdirSync(`./src/public/files/${folderName}`).forEach(
+          async (file) => {
+            const fileInDB = await filesInDB.find(
+              (f: any) => f.path === `/files/${folderName}/${file}`
+            );
+            if (fileInDB) {
+              const fileData = fs.statSync(
+                `./src/public/files/${folderName}/${file}`
+              );
+
+              files.push({
+                fileId: fileInDB._id ? fileInDB._id : "",
+                fileDescription: fileInDB.description
+                  ? fileInDB.description
+                  : "",
+                fileName: file.split(".")[0],
+                fileType: file.split(".")[1],
+                fileSize:
+                  fileData.size / 1000 > 1000
+                    ? `${(fileData.size / 1000000).toFixed(2)} MB`
+                    : `${(fileData.size / 1000).toFixed(2)} KB`,
+                fileDate: fileData.birthtime,
+                filePath: `/files/${folderName}/${file}`,
+                fileModified: fileData.mtime,
+                folderName,
+              });
+            }
+          }
+        );
+      });
+      resolve(files);
+    })
+      .then((files) => {
+        return res.status(200).json({
+          message: "Files",
+          isError: false,
+          files,
+        });
+      })
+      .catch((error: any) => {
+        pushLogInFile(error);
+        return res.status(500).json({ message: "Internal server error" });
+      });
+  } catch (error: any) {
+    pushLogInFile(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export async function getFile(req: Request, res: Response) {
+  try {
+    const fileId = req.params._id as string;
+
+    if (!fs.existsSync("./src/public/files")) {
+      fs.mkdirSync("./src/public/files");
+    }
+
+    const fileInDB = await File.findById(fileId);
+
+    if (!fileInDB) {
+      return res.status(200).json({
+        message: "File doesn't exist",
+        isError: true,
+      });
+    }
+
+    new Promise((resolve, reject) => {
+      if (fileInDB) {
+        const fileData = fs.statSync(`./src/public${fileInDB.path}`);
+        if (fileInDB._id.toString() === fileId) {
+          const returnFile = {
+            fileId: fileInDB._id ? fileInDB._id : "",
+            fileDescription: fileInDB.description ? fileInDB.description : "",
+            fileName: fileInDB.path.split("/")[3].split(".")[0],
+            fileType: fileInDB.path.split("/")[3].split(".")[1],
+            fileSize:
+              fileData.size / 1000 > 1000
+                ? `${(fileData.size / 1000000).toFixed(2)} MB`
+                : `${(fileData.size / 1000).toFixed(2)} KB`,
+            fileDate: fileData.birthtime,
+            filePath: `${fileInDB.path}`,
+            fileModified: fileData.mtime,
+            folderName: fileInDB.path.split("/")[2],
+          };
+          resolve(returnFile);
+        }
+      }
+    }).then((file) => {
+      return res.status(200).json({
+        message: "File",
+        isError: false,
+        file,
+      });
     });
   } catch (error: any) {
     pushLogInFile(error);
