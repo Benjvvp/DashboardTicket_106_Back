@@ -9,6 +9,13 @@ const SocketController = (
   io.on("connection", (socket: Socket) => {
     console.log("User connected");
 
+    socket.on("join", (data: { userId: string }) => {
+      socket.join(data.userId);
+    });
+    socket.on("leave", (data: { userId: string }) => {
+      socket.leave(data.userId);
+    });
+    
     socket.on(
       "chatSubmitMessage",
       async (data: { message: string; userId: string; senderId: string }) => {
@@ -29,12 +36,7 @@ const SocketController = (
         });
       }
     );
-    socket.on("join", (data: { userId: string }) => {
-      socket.join(data.userId);
-    });
-    socket.on("leave", (data: { userId: string }) => {
-      socket.leave(data.userId);
-    });
+
     socket.on("chatSeen", (data: { userId: string; senderId: string }) => {
       const { userId, senderId } = data;
       Message.find({
