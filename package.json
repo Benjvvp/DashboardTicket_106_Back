@@ -7,7 +7,7 @@
     "start": "./node_modules/.bin/pm2 start src/server.ts --watch",
     "dev": "nodemon --watch \"src/**/*.ts\" -e ts,json --exec \"ts-node --transpile-only ./src/server.ts\"",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
-    "serve": "tsc src/server.ts -w & pmw start src/server.ts --watch"
+    "serve": "tsc src/server.ts -w & pm2 start src/server.ts --watch"
   },
   "keywords": [],
   "author": "",
