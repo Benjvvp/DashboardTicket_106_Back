@@ -1,6 +1,6 @@
 // @ts-nocheck
 
-import bcryptjs from "bcryptjs";
+import * as bcryptjs from "bcryptjs";
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import DashboardOptions from "../../database/models/DashboardOptions";
