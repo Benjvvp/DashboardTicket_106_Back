@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { Request, Response } from "express";
 import { ObjectId } from "mongodb";
 import mongoose from "mongoose";
