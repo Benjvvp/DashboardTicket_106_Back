@@ -11,7 +11,9 @@ const SocketController = (
 
     socket.on("join", (data: { userId: string }) => {
       socket.join(data.userId);
+      socket.emit("userJoined", data.userId);
     });
+
     socket.on("leave", (data: { userId: string }) => {
       socket.leave(data.userId);
     });
@@ -72,7 +74,6 @@ const SocketController = (
       const { userId } = data;
       //Get users from DB
       const users = await User.find();
-
       //Create users list
       const usersList = users.map(async (user) => {
         //Get last message from DB
@@ -93,7 +94,9 @@ const SocketController = (
           ],
         });
 
-        const isOnlyUser = io.sockets.adapter.rooms.get(user._id);
+        let rooms = Array.from(io.sockets.adapter.rooms.keys());
+
+        let isOnlyUser = rooms.find((room) => room === user._id.toString()) !== undefined;
 
         return {
           _id: user._id,
