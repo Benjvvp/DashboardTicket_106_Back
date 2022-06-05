@@ -104,7 +104,7 @@ export async function editTask(req: Request, res: Response) {
     if (priority) {
       task.priority = priority;
     }
-    if (progress) {
+    if (progress !== undefined) {
       task.progress = progress;
     }
     await task.save();
