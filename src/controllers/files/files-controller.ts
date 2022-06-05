@@ -352,7 +352,6 @@ export function deleteFiles(req: Request, res: Response) {
     const filesDeleteCorrectly = [] as any;
     const filesDeleteError = [] as any;
 
-
     idFiles.split("/").forEach(async (file) => {
       const fileInDB = await File.findOne({ _id: file });
       if (fileInDB) {
@@ -368,7 +367,7 @@ export function deleteFiles(req: Request, res: Response) {
         } else {
           filesDeleteError.push(fileInDB._id);
         }
-      }  
+      }
     });
 
     if (filesDeleteError.length === idFiles.split("/").length) {
@@ -390,21 +389,12 @@ export function deleteFiles(req: Request, res: Response) {
   }
 }
 
-export function downloadFiles(req: Request, res: Response) {
+export async function downloadFiles(req: Request, res: Response) {
   try {
-    const folderName = req.body.folderName as string;
-    const filesNames = req.body.filesNames as string;
-
-    if (!folderName) {
+    const idFiles = req.body.idFiles as string[];
+    if (!idFiles) {
       return res.status(200).json({
-        message: "Folder name is required",
-        isError: true,
-      });
-    }
-
-    if (!filesNames) {
-      return res.status(200).json({
-        message: "File name is required",
+        message: "Files id is required",
         isError: true,
       });
     }
@@ -412,55 +402,39 @@ export function downloadFiles(req: Request, res: Response) {
     if (!fs.existsSync("./src/public/files")) {
       fs.mkdirSync("./src/public/files");
     }
-    if (!fs.existsSync(`./src/public/files/${folderName}`)) {
-      return res.status(200).json({
-        message: "Folder doesn't exist",
-        isError: true,
-      });
-    }
+
     const filesDownloadCorrectly = [] as any;
     const filesDownloadError = [] as any;
 
-    filesNames.split("/").forEach((file) => {
-      if (!fs.existsSync(`./src/public/files/${folderName}/${file}`)) {
-        filesDownloadError.push(file);
+    const filesInDB = await File.find();
+
+    filesInDB.forEach(async (file) => {
+      const path = file.path;
+      const fileName = path.split("/")[3];
+      const folderName = path.split("/")[2];
+      const filePath = `./src/public/files/${folderName}/${fileName}`;
+      if (fs.existsSync(filePath) && idFiles.includes(file._id.toString())) {
+        filesDownloadCorrectly.push(filePath);
       } else {
-        filesDownloadCorrectly.push(file);
+        filesDownloadError.push(filePath);
       }
     });
-
-    if (filesDownloadError.length === filesNames.split("/").length) {
+    if (filesDownloadError.length === idFiles.length) {
       return res.status(200).json({
         message: "All files doesn't exist or error in downloading",
         isError: true,
       });
     }
 
-    if (filesDownloadCorrectly.length === 1) {
-      res.download(
-        `./src/public/files/${folderName}/${filesDownloadCorrectly[0]}`,
-        filesDownloadCorrectly[0],
-        (err: any) => {
-          if (err) {
-            return res.status(200).json({
-              message: "Error downloading file",
-              isError: true,
-            });
-          }
-        }
-      );
-    } else {
-      const zip = archiver("zip");
-      res.attachment(`${folderName}.zip`);
-      zip.pipe(res);
-      filesDownloadCorrectly.forEach((file) => {
-        zip.append(
-          fs.createReadStream(`./src/public/files/${folderName}/${file}`),
-          { name: file }
-        );
+    const zip = archiver("zip");
+    res.attachment("files.zip");
+    zip.pipe(res);
+    await filesDownloadCorrectly.forEach(async (filePath) => {
+      zip.append(fs.createReadStream(filePath), {
+        name: filePath.split("/")[5],
       });
-      zip.finalize();
-    }
+    });
+    zip.finalize();
   } catch (error: any) {
     pushLogInFile(error);
     return res.status(500).json({ message: "Internal server error" });
